@@ -27,7 +27,10 @@
 #include "sam_ba_usb.h"
 #include "sam_ba_cdc.h"
 
-#define SKETCH_SLOT_SIZE 0xC000
+#define BOOTLOADER_SLOT_SIZE 0x2000
+#define SKETCH_SLOT_SIZE     0x1E000
+#define NEW_APP_SLOT_ADDR    (BOOTLOADER_SLOT_SIZE + SKETCH_SLOT_SIZE)
+#define FIRMWARE_HEADER_SIZE 6
 
 extern uint32_t __sketch_vectors_ptr; // Exported value from linker script
 extern void board_init(void);
@@ -46,17 +49,41 @@ static void jump_to_application(void) {
   asm("bx %0"::"r"(*pulSketch_Start_Address));
 }
 
+static uint16_t compute_crc(uint8_t *start, uint32_t len) {
+  uint16_t crc = 0;
+  for (uint32_t i = 0; i < len; i++) {
+    crc = serial_add_crc(start[i], crc);
+  }
+  return crc;
+}
+
 static void check_new_application(void) {
   // Check for magic number at end of lower slot, indicating that a new app
   // is present in upper slot.
-  volatile uint32_t magic = *((uint32_t *)(SKETCH_SLOT_SIZE + 0x2000) - 1);
-  if (magic != 0x5aa57ee7) return;
+  volatile uint32_t magic = *((uint32_t *)NEW_APP_SLOT_ADDR - 1);
+  if (magic != 0x2150415a) return;
 
   // Validate checksum on new app
-  // TODO
+  uint8_t *app_start = (uint8_t *)(NEW_APP_SLOT_ADDR + FIRMWARE_HEADER_SIZE);
+  uint8_t *newapp = (uint8_t*)NEW_APP_SLOT_ADDR;
+  uint16_t crc = newapp[5] | ((uint32_t)newapp[4] << 8);
+  uint32_t crclen = newapp[3] | ((uint32_t)newapp[2] << 8)
+                              | ((uint32_t)newapp[1] << 16)
+                              | ((uint32_t)newapp[0] << 24);
+  if (crclen > SKETCH_SLOT_SIZE) return;
+  uint16_t crccomputed = compute_crc(app_start, crclen);
+
+  // serial_open();
+  // serial_putc(0xa5);
+  // serial_putc((crc >> 8) & 0xff);
+  // serial_putc((crc >> 0) & 0xff);
+  // serial_putc(0x0);
+  // serial_putc((crccomputed >> 8) & 0xff);
+  // serial_putc((crccomputed >> 0) & 0xff);
+  if (crccomputed != crc) return;
 
   // Wipe lower program slot
-  uint32_t addr = 0x2000; // __sketch_vectors_ptr;
+  uint32_t addr = BOOTLOADER_SLOT_SIZE; // __sketch_vectors_ptr;
   uint32_t end = addr + SKETCH_SLOT_SIZE;
 
   const uint32_t pageSizes[] = { 8, 16, 32, 64, 128, 256, 512, 1024 };
@@ -70,9 +97,11 @@ static void check_new_application(void) {
   }
 
   // Copy upper slot to lower slot, erasing magic bytes
-  uint32_t size = SKETCH_SLOT_SIZE / 4;
-  uint32_t *src_addr = (uint32_t*)(0xC000 + 0x2000);
-  uint32_t *dst_addr = (uint32_t*)0x2000; //__sketch_vectors_ptr;
+  uint32_t size = SKETCH_SLOT_SIZE / 2;
+  // new app address + firmware header size + extra length header (4)
+  uint16_t *src_addr = (uint16_t*)(NEW_APP_SLOT_ADDR + FIRMWARE_HEADER_SIZE + 4);
+  size -= FIRMWARE_HEADER_SIZE / 2;
+  uint16_t *dst_addr = (uint16_t*)BOOTLOADER_SLOT_SIZE; //__sketch_vectors_ptr;
 
   NVMCTRL->CTRLB.bit.MANW = 0;  // Set automatic page write
   while (size) { // Do writes in pages
@@ -82,11 +111,12 @@ static void check_new_application(void) {
 
     // Fill page buffer
     uint32_t i;
-    for (i=0; i<(PAGE_SIZE/4) && i<size; i++) {
+    for (i=0; i<(PAGE_SIZE/2) && i<size; i++) {
+      // TODO: Because of the src offset caused by the header, we'll copy
+      // a few bytes from outside the flash range. Should make sure this isn't
+      // going to cause a problem.
       dst_addr[i] = src_addr[i];
     }
-    // This looks unnecessary since we're in auto page write mode.
-    // TODO: test whether true.
     NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_WP;
     while (NVMCTRL->INTFLAG.bit.READY == 0);
 
