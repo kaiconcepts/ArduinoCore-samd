@@ -150,7 +150,6 @@ void Serial_::begin(uint32_t /* baud_count */, uint8_t /* config */)
 
 void Serial_::end(void)
 {
-	memset((void*)&_usbLineInfo, 0, sizeof(_usbLineInfo));
 }
 
 int Serial_::available(void)
@@ -288,6 +287,6 @@ bool Serial_::rts() {
 	return _usbLineInfo.lineState & 0x2;
 }
 
-Serial_ SerialUSB(USBDevice);
+Serial_ Serial(USBDevice);
 
 #endif
