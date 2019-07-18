@@ -33,7 +33,7 @@ rm -f $FILENAME
 sed -i "s/name=.*/name=SAMD Hourly Build ${BUILD_NUMBER} (${CURR_TIME})/" platform.txt
 
 cd ..
-tar --transform "s|$FOLDERNAME|samd-hourly_b${BUILD_NUMBER}|g"  --exclude=extras/** --exclude=.git* --exclude=.idea -cjf $FILENAME $FOLDERNAME
+tar --transform "s|$FOLDERNAME|jetfoiler-hourly_b${BUILD_NUMBER}|g"  --exclude=extras/** --exclude=.git* --exclude=.idea -cjf $FILENAME $FOLDERNAME
 cd -
 
 mv ../$FILENAME .
@@ -47,5 +47,5 @@ sed "s/%%CURR_TIME%%/${CURR_TIME_SED}/" |
 sed "s/%%VERSION%%/${VERSION}/" |
 sed "s/%%FILENAME%%/${FILENAME}/" |
 sed "s/%%CHECKSUM%%/${CHKSUM}/" |
-sed "s/%%SIZE%%/${SIZE}/" > package_samd-hourly-build_index.json
+sed "s/%%SIZE%%/${SIZE}/" > package_jetfoiler-hourly-build_index.json
 
