@@ -1,7 +1,7 @@
 {
   "packages": [
     {
-      "name": "Jetfoiler hourly",
+      "name": "Jetfoiler",
       "maintainer": "Kai Concepts",
       "websiteURL": "http://www.jetfoiler.com/",
       "email": "kenneth@kiteboat.com",
@@ -10,11 +10,11 @@
       },
       "platforms": [
         {
-          "name": "Jetfoiler SAMD core - Hourly build",
+          "name": "Jetfoiler SAMD Boards",
           "architecture": "samd",
           "version": "%%VERSION%%",
           "category": "Contributed",
-          "url": "http://downloads.arduino.cc/Hourly/samd/%%FILENAME%%",
+          "url": "http://storage.googleapis.com/jf-fw/%%FILENAME%%",
           "archiveFileName": "%%FILENAME%%",
           "checksum": "SHA-256:%%CHECKSUM%%",
           "size": "%%SIZE%%",
