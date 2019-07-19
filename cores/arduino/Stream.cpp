@@ -27,7 +27,7 @@
 
 #define PARSE_TIMEOUT 1000  // default number of milli-seconds to wait
 
-// private method to read stream with timeout
+// protected method to read stream with timeout
 int Stream::timedRead()
 {
   int c;
@@ -35,11 +35,12 @@ int Stream::timedRead()
   do {
     c = read();
     if (c >= 0) return c;
+    yield(); // running TinyUSB task
   } while(millis() - _startMillis < _timeout);
   return -1;     // -1 indicates timeout
 }
 
-// private method to peek stream with timeout
+// protected method to peek stream with timeout
 int Stream::timedPeek()
 {
   int c;
@@ -47,6 +48,7 @@ int Stream::timedPeek()
   do {
     c = peek();
     if (c >= 0) return c;
+    yield(); // running TinyUSB task
   } while(millis() - _startMillis < _timeout);
   return -1;     // -1 indicates timeout
 }
