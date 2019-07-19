@@ -27,7 +27,7 @@ FILENAME=package_jetfoiler-v$VERSION.tar.bz2
 rm -f $FILENAME
 
 cd ..
-tar --transform "s|$FOLDERNAME|$FOLDERNAME-$VERSION|g"  --exclude=extras/** --exclude=.git* --exclude=.idea -cjf $FILENAME $FOLDERNAME
+gtar --transform "s|$FOLDERNAME|$FOLDERNAME-$VERSION|g"  --exclude=extras/** --exclude=.git* --exclude=.idea -cjf $FILENAME $FOLDERNAME
 cd -
 
 mv ../$FILENAME .
