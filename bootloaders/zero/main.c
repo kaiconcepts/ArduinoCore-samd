@@ -27,8 +27,8 @@
 #include "sam_ba_usb.h"
 #include "sam_ba_cdc.h"
 
-#define BOOTLOADER_SLOT_SIZE 0x2000
-#define SKETCH_SLOT_SIZE     0x1E000
+#define BOOTLOADER_SLOT_SIZE 0x2000U
+#define SKETCH_SLOT_SIZE     0x14000UL
 #define NEW_APP_SLOT_ADDR    (BOOTLOADER_SLOT_SIZE + SKETCH_SLOT_SIZE)
 #define FIRMWARE_HEADER_SIZE 6
 
@@ -58,6 +58,16 @@ static uint16_t compute_crc(uint8_t *start, uint32_t len) {
 }
 
 static void check_new_application(void) {
+  NVMCTRL->CTRLB.bit.MANW = 0;  // Set automatic page write
+
+  // Check sketch slot size written into end of BL space
+  uint32_t* sketch_slot_size_ptr = ((uint32_t*)BOOTLOADER_SLOT_SIZE) - 1;
+  if (*sketch_slot_size_ptr == 0xffffffff) {
+    // If memory in that spot is erased, write the sketch slot size there.
+    // Auto page write should cause this to get commited.
+    *sketch_slot_size_ptr = SKETCH_SLOT_SIZE;
+  }
+
   // Check for magic number at end of lower slot, indicating that a new app
   // is present in upper slot.
   volatile uint32_t magic = *((uint32_t *)NEW_APP_SLOT_ADDR - 1);
@@ -70,7 +80,9 @@ static void check_new_application(void) {
   uint32_t crclen = newapp[3] | ((uint32_t)newapp[2] << 8)
                               | ((uint32_t)newapp[1] << 16)
                               | ((uint32_t)newapp[0] << 24);
-  if (crclen > SKETCH_SLOT_SIZE) return;
+  // Don't bother checking CRC if header says new app is larger than the space
+  // available for it.
+  if (crclen > (FLASH_SIZE - (SKETCH_SLOT_SIZE + BOOTLOADER_SLOT_SIZE))) return;
   uint16_t crccomputed = compute_crc(app_start, crclen);
 
   // serial_open();
@@ -103,7 +115,6 @@ static void check_new_application(void) {
   size -= FIRMWARE_HEADER_SIZE / 2;
   uint16_t *dst_addr = (uint16_t*)BOOTLOADER_SLOT_SIZE; //__sketch_vectors_ptr;
 
-  NVMCTRL->CTRLB.bit.MANW = 0;  // Set automatic page write
   while (size) { // Do writes in pages
     // Execute "PBC" Page Buffer Clear
     NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_PBC;
