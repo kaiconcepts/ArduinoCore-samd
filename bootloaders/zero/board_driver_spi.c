@@ -196,15 +196,6 @@ static inline void initSPIClock(SercomSpiClockMode clockMode, uint32_t baudrate)
   SPI_SERCOM->SPI.BAUD.reg = calculateBaudrateSynchronous(baudrate);
 }
 
-static inline uint8_t transferDataSPI(uint8_t data)
-{
-  SPI_SERCOM->SPI.DATA.bit.DATA = data; // Writing data into Data register
-
-  while(SPI_SERCOM->SPI.INTFLAG.bit.RXC == 0); // Waiting Complete Reception
-
-  return SPI_SERCOM->SPI.DATA.bit.DATA;  // Reading data
-}
-
 static inline bool isBufferOverflowErrorSPI()
 {
   return SPI_SERCOM->SPI.STATUS.bit.BUFOVF;
@@ -215,6 +206,11 @@ static inline bool isDataRegisterEmptySPI()
   //DRE : Data Register Empty
   return SPI_SERCOM->SPI.INTFLAG.bit.DRE;
 }
+
+/*  =========================
+ *  ===== SPI API
+ *  =========================
+ */
 
 void spi_init(uint32_t baud) {
   pin_set_peripheral_function(PIN_SPI_MISO);
@@ -231,7 +227,9 @@ void spi_end() {
   disableSPI();
 }
 
-uint8_t spi_write(uint8_t ucData)
+uint8_t spi_transfer(uint8_t ucData)
 {
-  return transferDataSPI(ucData);
+  SPI_SERCOM->SPI.DATA.bit.DATA = data; // Writing data into Data register
+  while(SPI_SERCOM->SPI.INTFLAG.bit.RXC == 0); // Waiting Complete Reception
+  return SPI_SERCOM->SPI.DATA.bit.DATA;  // Reading data
 }

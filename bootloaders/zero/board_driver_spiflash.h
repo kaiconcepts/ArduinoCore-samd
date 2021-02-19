@@ -17,15 +17,15 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _BOARD_DRIVER_SPI_
-#define _BOARD_DRIVER_SPI_
+#ifndef _BOARD_DRIVER_SPIFLASH_
+#define _BOARD_DRIVER_SPIFLASH_
 
 #include <sam.h>
 #include <stdbool.h>
 #include "board_definitions.h"
 
-void spi_init(uint32_t baud);
-void spi_end();
-uint8_t spi_transfer(uint8_t ucData);
-
-#endif // _BOARD_DRIVER_SPI_
+uint8_t spiflash_readByte(uint32_t addr);
+void    spiflash_readBytes(uint32_t addr, void* buf, uint16_t len);
+void    spiflash_init( void );
+{
+#endif // _BOARD_DRIVER_FLASHMEM_
