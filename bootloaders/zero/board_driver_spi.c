@@ -218,7 +218,7 @@ void spi_init(uint32_t baud) {
   pin_set_peripheral_function(PIN_SPI_SCK);
 
   disableSPI();
-  initSpi(SPI_PAD_2_SCK_3, SERCOM_RX_PAD_0, SPI_CHAR_SIZE_8_BITS, MSB_FIRST);
+  initSPI(SPI_PAD_2_SCK_3, SERCOM_RX_PAD_0, SPI_CHAR_SIZE_8_BITS, MSB_FIRST);
   initSPIClock(SERCOM_SPI_MODE_0, baud);
   enableSPI();
 }
@@ -227,7 +227,7 @@ void spi_end() {
   disableSPI();
 }
 
-uint8_t spi_transfer(uint8_t ucData)
+uint8_t spi_transfer(uint8_t data)
 {
   SPI_SERCOM->SPI.DATA.bit.DATA = data; // Writing data into Data register
   while(SPI_SERCOM->SPI.INTFLAG.bit.RXC == 0); // Waiting Complete Reception

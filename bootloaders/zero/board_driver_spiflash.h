@@ -27,5 +27,5 @@
 uint8_t spiflash_readByte(uint32_t addr);
 void    spiflash_readBytes(uint32_t addr, void* buf, uint16_t len);
 void    spiflash_init( void );
-{
+
 #endif // _BOARD_DRIVER_FLASHMEM_

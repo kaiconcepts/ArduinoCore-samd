@@ -42,7 +42,7 @@ static inline uint8_t spiflash_readStatus()
 }
 
 /// check if the chip is busy erasing/writing
-static inline boolean spiflash_busy()
+static inline bool spiflash_busy()
 {
   return spiflash_readStatus() & 1;
 }
@@ -97,7 +97,7 @@ uint8_t spiflash_readByte(uint32_t addr)
   spi_transfer(addr >> 16);
   spi_transfer(addr >> 8);
   spi_transfer(addr);
-  uint8_t result = SPI.transfer(0);
+  uint8_t result = spi_transfer(0);
   spiflash_unselect();
   return result;
 
@@ -117,20 +117,8 @@ void spiflash_readBytes(uint32_t addr, void* buf, uint16_t len)
 void spiflash_init()
 {
   PORT->Group[BOARD_SPIFLASH_PORT].DIRSET.reg = (1 << BOARD_SPIFLASH_PIN);
-  spi_init();
+  spi_init(4000000);
   spiflash_unselect();
   spiflash_wakeup();
   
-}
-
-boolean SPIFlash::initialize()
-{
-
-  if (_jedecID == 0 || spiflash_readDeviceId() == _jedecID) {
-    command(SPIFLASH_STATUSWRITE, true); // Write Status Register
-    SPI.transfer(0);                     // Global Unprotect
-    unselect();
-    return true;
-  }
-  return false;
 }

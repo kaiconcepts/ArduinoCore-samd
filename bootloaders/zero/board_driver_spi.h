@@ -26,6 +26,6 @@
 
 void spi_init(uint32_t baud);
 void spi_end();
-uint8_t spi_transfer(uint8_t ucData);
+uint8_t spi_transfer(uint8_t data);
 
 #endif // _BOARD_DRIVER_SPI_
