@@ -22,7 +22,7 @@ ifeq ($(OS),Windows_NT)
   ifeq ($(TERM),xterm)
     T=$(shell cygpath -u $(LOCALAPPDATA))
     MODULE_PATH?=$(T)/Arduino15/packages/arduino
-    RM=rm
+    RM=rm 
     SEP=/
   else
     MODULE_PATH?=$(LOCALAPPDATA)/Arduino15/packages/arduino
@@ -63,9 +63,10 @@ NAME?=samd21_sam_ba
 # -----------------------------------------------------------------------------
 # Compiler options
 CFLAGS_EXTRA=-D__SAMD21G18A__ -DBOARD_ID_$(BOARD_ID)
-CFLAGS=-mthumb -mcpu=cortex-m0plus -Wall -c -std=gnu99 -ffunction-sections -fdata-sections -nostdlib -nostartfiles --param max-inline-insns-single=500
+CFLAGS=-mthumb -mcpu=cortex-m0plus -Wall -c -std=gnu11 -ffunction-sections -fdata-sections -nostdlib -nostartfiles --param max-inline-insns-single=500
 ifdef DEBUG
-  CFLAGS+=-g3 -O1 -DDEBUG=1
+  CFLAGS+=-g3 -Os -DDEBUG=1
+  CFLAGS+= -Werror
 else
   CFLAGS+=-Os -DDEBUG=0
 endif
@@ -171,5 +172,7 @@ clean: $(AS_CLEAN)
 	-$(RM) $(HEX)
 	-$(RM) $(BUILD_PATH)/*.*
 	-rmdir $(BUILD_PATH)
+
+rebuild: clean all
 
 .phony: print_info $(BUILD_PATH)

@@ -24,6 +24,7 @@
 #include "board_definitions.h"
 #include "board_driver_led.h"
 #include "board_driver_i2c.h"
+#include "board_driver_spiflash.h"
 #include "sam_ba_usb.h"
 #include "sam_ba_cdc.h"
 
@@ -278,6 +279,8 @@ int main(void)
 #endif
 
   DEBUG_PIN_LOW;
+
+  spiflash_init();
 
   /* Initialize LEDs */
   LED_init();

@@ -22,14 +22,20 @@
                                               // Example for Winbond 4Mbit W25X40CL: 0xEF30 (page 14: http://www.winbond.com/NR/rdonlyres/6E25084C-0BFE-4B25-903D-AE10221A0929/0/W25X40CL.pdf)
 #define SPIFLASH_MACREAD          0x4B        // read unique ID number (MAC)
 
+// External flash SS pin is PORT B, PIN 2
+// From variant.cpp
+// 19         | A5               |  PB02  | A5              | EIC/EXTINT[2] *ADC/AIN[10]           PTC/Y[8]  SERCOM5/PAD[0] 
+
 static inline void spiflash_select()
 {
-  PORT->Group[BOARD_LED_PORT].OUTSET.reg = (1 << BOARD_LED_PIN);
+  
+  PORT->Group[BOARD_SPIFLASH_PORT].OUTCLR.reg |= (1 << BOARD_SPIFLASH_PIN);
 }
 
 static inline void spiflash_unselect()
 {
-  PORT->Group[BOARD_LED_PORT].OUTCLR.reg = (1 << BOARD_LED_PIN);
+  PORT->Group[BOARD_SPIFLASH_PORT].OUTSET.reg |= (1 << BOARD_SPIFLASH_PIN);
+  
 }
 
 static inline uint8_t spiflash_readStatus()
@@ -120,5 +126,4 @@ void spiflash_init()
   spi_init(4000000);
   spiflash_unselect();
   spiflash_wakeup();
-  
 }
