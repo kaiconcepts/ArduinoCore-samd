@@ -1,6 +1,4 @@
 /*
-  Copyright (c) 2015 Arduino LLC.  All right reserved.
-  Copyright (c) 2015 Atmel Corporation/Thibaut VIARD.  All right reserved.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -25,6 +23,7 @@
 #include "board_definitions.h"
 
 uint8_t spiflash_readByte(uint32_t addr);
+uint16_t spiflash_readDeviceId();
 void    spiflash_readBytes(uint32_t addr, void* buf, uint16_t len);
 void    spiflash_init( void );
 

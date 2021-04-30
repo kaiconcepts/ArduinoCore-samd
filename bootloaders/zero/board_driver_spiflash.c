@@ -82,7 +82,7 @@ static inline void spiflash_wakeup()
   spiflash_unselect();
 }
 
-static inline uint16_t spiflash_readDeviceId()
+uint16_t spiflash_readDeviceId()
 {
   spiflash_select();
   spi_transfer(SPIFLASH_IDREAD);

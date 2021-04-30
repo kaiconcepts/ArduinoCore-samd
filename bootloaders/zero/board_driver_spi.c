@@ -21,7 +21,7 @@
 
 /*- Definitions -------------------------------------------------------------*/
 #define SPI_SERCOM           SERCOM4
-#define SPI_SERCOM_GCLK_ID   GCLK_CLKCTRL_ID_SERCOM0_CORE_Val
+#define SPI_SERCOM_GCLK_ID   GCLK_CLKCTRL_ID_SERCOM4_CORE_Val
 #define SERCOM_SPI_FREQ_REF 48000000ul
 #define PIN_SPI_MISO         PINMUX_PA12D_SERCOM4_PAD0
 #define PIN_SPI_MOSI         PINMUX_PB10D_SERCOM4_PAD2
@@ -110,7 +110,7 @@ static inline void initClockNVIC( void )
   {
     /* Wait for synchronization */
   }
-  PM->APBCMASK.reg |= PM_APBCMASK_SERCOM0;
+  PM->APBCMASK.reg |= PM_APBCMASK_SERCOM4;
 }
 
 static inline uint8_t calculateBaudrateSynchronous(uint32_t baudrate) {
@@ -216,6 +216,31 @@ void spi_init(uint32_t baud) {
   pin_set_peripheral_function(PIN_SPI_MISO);
   pin_set_peripheral_function(PIN_SPI_MOSI);
   pin_set_peripheral_function(PIN_SPI_SCK);
+
+/*
+#define PIN_SPI_MISO         PINMUX_PA12D_SERCOM4_PAD0
+#define PIN_SPI_MOSI         PINMUX_PB10D_SERCOM4_PAD2
+#define PIN_SPI_SCK          PINMUX_PB11D_SERCOM4_PAD3
+ */
+
+	//Using the WRCONFIG register to bulk configure PB16 for being configured the SERCOM5 SPI MASTER MISO
+	PORT->Group[0].WRCONFIG.reg = 
+		PORT_WRCONFIG_WRPINCFG |											//Enables the configuration of PINCFG
+		PORT_WRCONFIG_WRPMUX |												//Enables the configuration of the PMUX for the selected pins
+		PORT_WRCONFIG_PMUXEN |												//Enables the PMUX for the pins
+		PORT_WRCONFIG_PMUX(PIN_SPI_MISO) |						//Bulk configuration for PMUX "C" for SERCOM5
+		PORT_WRCONFIG_HWSEL |												//Select the correct pin configurations for 16-31
+		PORT_WRCONFIG_INEN |												//Enable input on this pin MISO
+		PORT_WRCONFIG_PINMASK((uint16_t)((PORT_PA12D_SERCOM4_PAD0) >> 16));				//Selecting which pin is configured  PB16  This bit needs to shift to fit the 16 bit macro requirements
+		
+	//Using the WRCONFIG register to bulk configure both PB22 and PB23 for being configured the SERCOM5 SPI MASTER MOSI and SCK pins
+	PORT->Group[1].WRCONFIG.reg =
+		PORT_WRCONFIG_WRPINCFG |											//Enables the configuration of PINCFG
+		PORT_WRCONFIG_WRPMUX |												//Enables the configuration of the PMUX for the selected pins
+		PORT_WRCONFIG_PMUX(PIN_SPI_MOSI) |						//Bulk configuration for PMUX
+		PORT_WRCONFIG_PMUXEN |												//Enables the PMUX for the pins
+		PORT_WRCONFIG_HWSEL |												//Select the correct pin configurations for 16-31
+		PORT_WRCONFIG_PINMASK ((uint16_t)((PORT_PB10D_SERCOM4_PAD2 | PORT_PB11D_SERCOM4_PAD3) >> 16));	//Selecting which pin is configured
 
   disableSPI();
   initSPI(SPI_PAD_2_SCK_3, SERCOM_RX_PAD_0, SPI_CHAR_SIZE_8_BITS, MSB_FIRST);

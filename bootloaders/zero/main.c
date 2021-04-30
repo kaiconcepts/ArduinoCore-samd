@@ -241,6 +241,21 @@ static void check_start_application(void)
 #	define DEBUG_PIN_LOW 	do{}while(0)
 #endif
 
+/** 
+ * \brief Example SPI task
+ */
+
+static void spitask(){
+
+  uint8_t membyte[256] = {0};
+  for (int i = 0; i < 10; ++i){
+    uint16_t deviceID = spiflash_readDeviceId();
+    spiflash_readBytes(i, membyte, 256);
+    sam_ba_putdata_term(membyte, 256);
+    sam_ba_putdata_term((uint8_t *)(&deviceID), 2);
+  }
+}
+
 /**
  *  \brief SAMD21 SAM-BA Main loop.
  *  \return Unused (ANSI-C compatibility).
@@ -308,7 +323,8 @@ int main(void)
       /* SAM-BA on USB loop */
       while( 1 )
       {
-        sam_ba_monitor_run();
+        spitask();
+        // sam_ba_monitor_run();
       }
     }
 #endif

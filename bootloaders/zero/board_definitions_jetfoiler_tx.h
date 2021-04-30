@@ -78,7 +78,7 @@
 #define BOARD_LEDTX_PORT                  (0)
 #define BOARD_LEDTX_PIN                   (27)
 
-#define BOARD_SPIFLASH_PORT               (0)
+#define BOARD_SPIFLASH_PORT               (1)
 #define BOARD_SPIFLASH_PIN                (2)
 
 #endif // _BOARD_DEFINITIONS_H_
