@@ -1,0 +1,9 @@
+set confirm off
+target extended-remote /dev/cu.usbmodemDFDAABEA1
+mon swdp
+attach 1
+load build/samd21_sam_ba.elf
+mon hard_srst
+mon swdp
+att 1
+file build/samd21_sam_ba.elf

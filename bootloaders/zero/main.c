@@ -50,6 +50,7 @@ static void jump_to_application(void) {
   asm("bx %0"::"r"(*pulSketch_Start_Address));
 }
 
+/* 
 static uint16_t compute_crc(uint8_t *start, uint32_t len) {
   uint16_t crc = 0;
   for (uint32_t i = 0; i < len; i++) {
@@ -57,6 +58,10 @@ static uint16_t compute_crc(uint8_t *start, uint32_t len) {
   }
   return crc;
 }
+*/
+
+#define NEW_APP_SPIFLASH_ADDR 0x1000
+#define READ_CHUNK_SIZE       0x400
 
 static void check_new_application(void) {
   // Check for magic number at end of lower slot, indicating that a new app
@@ -65,14 +70,28 @@ static void check_new_application(void) {
   if (magic != 0x2150415a) return;
 
   // Validate checksum on new app
-  uint8_t *app_start = (uint8_t *)(NEW_APP_SLOT_ADDR + FIRMWARE_HEADER_SIZE);
-  uint8_t *newapp = (uint8_t*)NEW_APP_SLOT_ADDR;
-  uint16_t crc = newapp[5] | ((uint32_t)newapp[4] << 8);
-  uint32_t crclen = newapp[3] | ((uint32_t)newapp[2] << 8)
-                              | ((uint32_t)newapp[1] << 16)
-                              | ((uint32_t)newapp[0] << 24);
+  //uint8_t *app_start = (uint8_t *)(NEW_APP_SLOT_ADDR + FIRMWARE_HEADER_SIZE);
+  //uint8_t *newapp = (uint8_t*)NEW_APP_SLOT_ADDR;
+
+  uint8_t appheader[FIRMWARE_HEADER_SIZE];
+  uint8_t app_chunk[READ_CHUNK_SIZE];
+  spiflash_readBytes(NEW_APP_SPIFLASH_ADDR, appheader, FIRMWARE_HEADER_SIZE);
+
+  uint16_t crc =    appheader[5]  | ((uint32_t)appheader[4] << 8);
+  uint32_t crclen = appheader[3]  | ((uint32_t)appheader[2] << 8)
+                                  | ((uint32_t)appheader[1] << 16)
+                                  | ((uint32_t)appheader[0] << 24);
   if (crclen > SKETCH_SLOT_SIZE) return;
-  uint16_t crccomputed = compute_crc(app_start, crclen);
+
+  uint16_t crccomputed = 0;
+  for (uint32_t i = 0; i < crclen; i += READ_CHUNK_SIZE){
+    spiflash_readBytes(NEW_APP_SPIFLASH_ADDR + i, app_chunk, READ_CHUNK_SIZE);
+    for (uint32_t j = 0; j < crclen - i && j < READ_CHUNK_SIZE; ++j){
+      crccomputed = serial_add_crc(app_chunk[j], crccomputed);
+    }
+  }
+
+  //uint16_t crccomputed = compute_crc(app_start, crclen);
 
   // serial_open();
   // serial_putc(0xa5);
@@ -100,7 +119,7 @@ static void check_new_application(void) {
   // Copy upper slot to lower slot, erasing magic bytes
   uint32_t size = SKETCH_SLOT_SIZE / 2;
   // new app address + firmware header size + extra length header (4)
-  uint16_t *src_addr = (uint16_t*)(NEW_APP_SLOT_ADDR + FIRMWARE_HEADER_SIZE + 4);
+  uint32_t src_addr = (NEW_APP_SPIFLASH_ADDR + FIRMWARE_HEADER_SIZE + 4);
   size -= FIRMWARE_HEADER_SIZE / 2;
   uint16_t *dst_addr = (uint16_t*)BOOTLOADER_SLOT_SIZE; //__sketch_vectors_ptr;
 
@@ -109,21 +128,21 @@ static void check_new_application(void) {
     // Execute "PBC" Page Buffer Clear
     NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_PBC;
     while (NVMCTRL->INTFLAG.bit.READY == 0);
-
+    spiflash_readBytes(src_addr, app_chunk, PAGE_SIZE << 1);
     // Fill page buffer
     uint32_t i;
     for (i=0; i<(PAGE_SIZE/2) && i<size; i++) {
       // TODO: Because of the src offset caused by the header, we'll copy
       // a few bytes from outside the flash range. Should make sure this isn't
       // going to cause a problem.
-      dst_addr[i] = src_addr[i];
+      dst_addr[i] = ((uint16_t *)app_chunk)[i];
     }
     NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_WP;
     while (NVMCTRL->INTFLAG.bit.READY == 0);
 
     // Advance to next page
     dst_addr += i;
-    src_addr += i;
+    src_addr += i << 4;
     size -= i;
   }
 }
