@@ -128,7 +128,7 @@ static void check_new_application(void) {
     // Execute "PBC" Page Buffer Clear
     NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_PBC;
     while (NVMCTRL->INTFLAG.bit.READY == 0);
-    spiflash_readBytes(src_addr, app_chunk, PAGE_SIZE << 1);
+    spiflash_readBytes(src_addr, app_chunk, PAGE_SIZE);
     // Fill page buffer
     uint32_t i;
     for (i=0; i<(PAGE_SIZE/2) && i<size; i++) {
@@ -142,7 +142,7 @@ static void check_new_application(void) {
 
     // Advance to next page
     dst_addr += i;
-    src_addr += i << 4;
+    src_addr += i << 1;
     size -= i;
   }
 }
@@ -260,21 +260,6 @@ static void check_start_application(void)
 #	define DEBUG_PIN_LOW 	do{}while(0)
 #endif
 
-/** 
- * \brief Example SPI task
- */
-
-static void spitask(){
-
-  uint8_t membyte[256] = {0};
-  for (int i = 0; i < 10; ++i){
-    uint16_t deviceID = spiflash_readDeviceId();
-    spiflash_readBytes(i, membyte, 256);
-    sam_ba_putdata_term(membyte, 256);
-    sam_ba_putdata_term((uint8_t *)(&deviceID), 2);
-  }
-}
-
 /**
  *  \brief SAMD21 SAM-BA Main loop.
  *  \return Unused (ANSI-C compatibility).
@@ -286,15 +271,16 @@ int main(void)
 #endif
   DEBUG_PIN_HIGH;
 
-  check_new_application();
-
-  /* Jump in application if condition is satisfied */
-  check_start_application();
-
   /* We have determined we should stay in the monitor. */
   /* System initialization */
   board_init();
   __enable_irq();
+
+  spiflash_init();
+
+  check_new_application();
+  /* Jump in application if condition is satisfied */
+  check_start_application();
 
 #ifdef CONFIGURE_PMIC
   configure_pmic();
@@ -314,8 +300,6 @@ int main(void)
 
   DEBUG_PIN_LOW;
 
-  spiflash_init();
-
   /* Initialize LEDs */
   LED_init();
   LEDRX_init();
@@ -329,6 +313,7 @@ int main(void)
   /* Wait for a complete enum on usb or a '#' char on serial line */
   while (1)
   {
+    check_new_application();
 #if SAM_BA_INTERFACE == SAM_BA_USBCDC_ONLY  ||  SAM_BA_INTERFACE == SAM_BA_BOTH_INTERFACES
     if (pCdc->IsConfigured(pCdc) != 0)
     {
@@ -342,8 +327,7 @@ int main(void)
       /* SAM-BA on USB loop */
       while( 1 )
       {
-        spitask();
-        // sam_ba_monitor_run();
+        sam_ba_monitor_run();
       }
     }
 #endif
